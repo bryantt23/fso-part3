@@ -1,6 +1,7 @@
 const express = require('express');
 
 const app = express();
+app.use(express.json());
 
 let persons = [
   {
@@ -59,6 +60,18 @@ app.delete('/api/persons/:id', (req, res) => {
     res.status(204).end();
   } else {
     res.status(404).send('person not found').end();
+  }
+});
+
+app.post('/api/persons/', (req, res) => {
+  const id = Date.now();
+  const person = req.body;
+  persons.push({ ...person, id });
+
+  if (person) {
+    res.status(201).end();
+  } else {
+    res.status(404).send('something went wrong').end();
   }
 });
 
