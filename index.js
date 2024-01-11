@@ -66,13 +66,17 @@ app.delete('/api/persons/:id', (req, res) => {
 app.post('/api/persons/', (req, res) => {
   const id = Date.now();
   const person = req.body;
-  persons.push({ ...person, id });
-
-  if (person) {
-    res.status(201).end();
-  } else {
-    res.status(404).send('something went wrong').end();
+  // Validate the incoming data
+  if (!person || !person.name || !person.number) {
+    return res.status(400).send('Invalid data').end();
   }
+
+  const index = persons.findIndex(p => p.name === person.name);
+  if (index > -1) {
+    return res.status(409).send('Name already exists').end();
+  }
+  persons.push({ ...person, id });
+  res.status(201).end();
 });
 
 app.get('/info', (req, res) => {
