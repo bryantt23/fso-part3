@@ -49,8 +49,6 @@ app.get('/api/persons/:id', async (req, res, next) => {
     }
   } catch (error) {
     next(error, 500, 'Internal Server Error');
-    // console.error('Error:', error);
-    // res.status(500).send('Internal Server Error').end();
   }
 });
 
@@ -64,8 +62,6 @@ app.delete('/api/persons/:id', async (req, res, next) => {
     }
   } catch (error) {
     next(error, 500, 'Internal Server Error');
-    // console.error('Error:', error);
-    // res.status(500).send('Internal Server Error').end();
   }
 });
 
@@ -79,8 +75,6 @@ app.post('/api/persons/', async (req, res, next) => {
     res.status(201).json(savedPerson);
   } catch (error) {
     next(error, 400, 'Invalid data');
-    // console.error('Error:', error);
-    // res.status(400).send('Invalid data').end();
   }
 });
 
