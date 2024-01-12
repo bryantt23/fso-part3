@@ -1,6 +1,14 @@
+const Person = require('./models/person');
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const mongoose = require('mongoose');
+require('dotenv').config();
+
+const mongoDb = process.env.MONGODB_URI;
+mongoose.connect(mongoDb);
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'mongo connection error'));
 
 morgan.token('body', req => {
   return JSON.stringify(req.body);
@@ -12,80 +20,55 @@ app.use(cors());
 app.use(morgan(':method :url :body'));
 app.use(express.static('dist'));
 
-let persons = [
-  {
-    id: 1,
-    name: 'Arto Hellas',
-    number: '040-123456'
-  },
-  {
-    id: 2,
-    name: 'Ada Lovelace',
-    number: '39-44-5323523'
-  },
-  {
-    id: 3,
-    name: 'Dan Abramov',
-    number: '12-43-234345'
-  },
-  {
-    id: 4,
-    name: 'Mary Poppendieck',
-    number: '39-23-6423122'
-  }
-];
-
 app.get('/', (req, res) => {
   res.send('<h1>Hello World!</h1>');
 });
 
-app.get('/api/persons', (req, res) => {
+app.get('/api/persons', async (req, res) => {
+  const persons = await Person.find({});
   res.json(persons);
 });
 
-app.get('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const person = persons.find(person => {
-    return person.id === id;
-  });
-  console.log('🚀 ~ person ~ person:', person);
-  if (person) {
-    res.json(person);
-  } else {
-    res.status(404).end();
+app.get('/api/persons/:id', async (req, res) => {
+  try {
+    const person = await Person.findById(req.params.id);
+    if (person) {
+      res.json(person);
+    } else {
+      res.status(404).end();
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Internal Server Error').end();
   }
 });
 
-app.delete('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const person = persons.find(person => {
-    return person.id === id;
-  });
-
-  if (person) {
-    persons = persons.filter(person => {
-      return person.id !== id;
-    });
-    res.status(204).end();
-  } else {
-    res.status(404).send('person not found').end();
+app.delete('/api/persons/:id', async (req, res) => {
+  try {
+    const result = await Person.findByIdAndDelete(req.params.id);
+    if (result) {
+      res.status(204).end();
+    } else {
+      res.status(404).send('Person not found').end();
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Internal Server Error').end();
   }
 });
 
-app.post('/api/persons/', (req, res) => {
-  const id = Date.now();
-  const person = req.body;
-  // Validate the incoming data
-  if (!person || !person.name || !person.number) {
-    return res.status(400).send('Invalid data').end();
+app.post('/api/persons/', async (req, res) => {
+  const person = new Person({
+    name: req.body.name,
+    number: req.body.number
+  });
+  try {
+    const savedPerson = await person.save();
+    res.status(201).json(savedPerson);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(400).send('Invalid data').end();
   }
-
-  const index = persons.findIndex(p => p.name === person.name);
-  if (index > -1) {
-    return res.status(409).send('Name already exists').end();
-  }
-  persons.push({ ...person, id });
-  res.status(201).end();
 });
 
 app.get('/info', (req, res) => {
