@@ -14,13 +14,12 @@ morgan.token('body', req => {
   return JSON.stringify(req.body);
 });
 
-const errorHandler = (error, statusCode, message, req, res, next) => {
-  console.error('Error:', error.message);
-  if (statusCode) {
-    res.status(statusCode).send(message).end();
-  }
+const errorHandler = (error, req, res, next) => {
+  console.error('Error:', error._message);
 
-  next(error);
+  const statusCode = error.statusCode || 500;
+  const message = error.message || 'Internal Server Error';
+  res.status(statusCode).send({ error: message }).end();
 };
 
 const app = express();
@@ -28,7 +27,6 @@ app.use(express.json());
 app.use(cors());
 app.use(morgan(':method :url :body'));
 app.use(express.static('dist'));
-app.use(errorHandler);
 
 app.get('/', (req, res, next) => {
   res.send('<h1>Hello World!</h1>');
@@ -48,7 +46,7 @@ app.get('/api/persons/:id', async (req, res, next) => {
       res.status(404).end();
     }
   } catch (error) {
-    next(error, 500, 'Internal Server Error');
+    next(error);
   }
 });
 
@@ -61,7 +59,7 @@ app.delete('/api/persons/:id', async (req, res, next) => {
       res.status(404).send('Person not found').end();
     }
   } catch (error) {
-    next(error, 500, 'Internal Server Error');
+    next(error);
   }
 });
 
@@ -76,15 +74,15 @@ app.post('/api/persons/', async (req, res, next) => {
     });
   }
 
-  const person = new Person({
-    name,
-    number
-  });
   try {
+    const person = new Person({
+      name,
+      number
+    });
     const savedPerson = await person.save();
     res.status(201).json(savedPerson);
   } catch (error) {
-    next(error, 400, 'Invalid data');
+    next(error);
   }
 });
 
@@ -120,6 +118,8 @@ app.get('/info', (req, res, next) => {
   <p>${new Date().toLocaleString()}</p>
   </div>`);
 });
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
