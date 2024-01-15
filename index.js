@@ -108,7 +108,6 @@ app.put('/api/persons/:id', async (req, res, next) => {
         .status(404)
         .json({ error: 'Person with the given ID does not exist' });
     }
-
     res.status(200).json(updatedPerson);
   } catch (error) {
     next(error);
