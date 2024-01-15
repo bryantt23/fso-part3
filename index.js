@@ -66,15 +66,52 @@ app.delete('/api/persons/:id', async (req, res, next) => {
 });
 
 app.post('/api/persons/', async (req, res, next) => {
+  const { name, number } = req.body;
+
+  const existingPerson = await Person.findOne({ name });
+  if (existingPerson) {
+    return res.status(409).json({
+      error: 'Name already exists',
+      id: existingPerson._id
+    });
+  }
+
   const person = new Person({
-    name: req.body.name,
-    number: req.body.number
+    name,
+    number
   });
   try {
     const savedPerson = await person.save();
     res.status(201).json(savedPerson);
   } catch (error) {
     next(error, 400, 'Invalid data');
+  }
+});
+
+app.put('/api/persons/:id', async (req, res, next) => {
+  const { id } = req.params;
+  const { number } = req.body;
+
+  // Check if the provided ID is a valid ObjectId
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: 'Invalid ID format' });
+  }
+
+  try {
+    const updatedPerson = await Person.findByIdAndUpdate(
+      id,
+      { number },
+      { new: true, runValidators: true, context: 'query' } // options for findByIdAndUpdate
+    );
+    if (!updatedPerson) {
+      return res
+        .status(404)
+        .json({ error: 'Person with the given ID does not exist' });
+    }
+
+    res.status(200).json(updatedPerson);
+  } catch (error) {
+    next(error);
   }
 });
 
